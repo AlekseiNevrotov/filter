@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Фото в Код</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #0f0;
+      font-family: monospace;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      color: #0f0;
+      margin-bottom: 10px;
+    }
+
+    input {
+      margin-bottom: 10px;
+    }
+
+    #asciiOutput {
+      white-space: pre-wrap;
+      line-height: 0.65;
+      font-size: 8.5px;
+      letter-spacing: 0.8px;
+      user-select: text;
+      background-color: #000;
+    }
+
+    #preview {
+      display: none;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      font-family: monospace;
+      background: #0f0;
+      border: none;
+      color: #000;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Фото в ASCII-коде</h1>
+  <input type="file" id="upload" accept="image/*">
+  <canvas id="preview"></canvas>
+  <pre id="asciiOutput"></pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script>
+    const upload = document.getElementById('upload');
+    const preview = document.getElementById('preview');
+    const output = document.getElementById('asciiOutput');
+
+    const chars = '@#W$9876543210?!abc;:+=-,._ '.split('').reverse();
+
+    // Палитра VS Code (Dark+)
+    const colorPalette = [
+      '#6A9955', // зелёный
+      '#569CD6', // синий
+      '#C586C0', // фиолетовый
+      '#CE9178', // оранжевый
+      '#DCDCAA', // жёлтый
+      '#D4D4D4', // светлый
+      '#808080'  // серый
+    ];
+
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const ctx = preview.getContext('2d');
+
+        const maxWidth = 120;
+        const aspectRatioCorrection = 1; // Для консольного вида
+
+        const scale = maxWidth / img.width;
+        const width = Math.floor(img.width * scale);
+        const height = Math.floor(img.height * scale * aspectRatioCorrection);
+
+        preview.width = width;
+        preview.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const imageData = ctx.getImageData(0, 0, width, height).data;
+
+        let ascii = '';
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const offset = (y * width + x) * 4;
+            const r = imageData[offset];
+            const g = imageData[offset + 1];
+            const b = imageData[offset + 2];
+            const brightness = (r + g + b) / 3;
+            const charIndex = Math.floor(brightness / 255 * (chars.length - 1));
+            const colorIndex = Math.floor(brightness / 255 * (colorPalette.length - 1));
+            const char = chars[charIndex];
+            const color = colorPalette[colorIndex];
+            ascii += `<span style="color:${color}">${char}</span>`;
+          }
+          ascii += '\n';
+        }
+
+        output.innerHTML = ascii;
+
+        // Кнопка PNG
+        let pngButton = document.getElementById('downloadPng');
+        if (pngButton) pngButton.remove();
+
+        const savePngButton = document.createElement('button');
+        savePngButton.textContent = 'Скачать PNG';
+        savePngButton.id = 'downloadPng';
+
+        savePngButton.addEventListener('click', () => {
+          html2canvas(output, {
+            backgroundColor: '#000',
+            scale: 10,
+            useCORS: true
+          }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'ascii-art.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          });
+        });
+
+        output.after(savePngButton);
+      };
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>
