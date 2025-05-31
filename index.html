@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Фото в Код</title>
+  <title>Filter</title>
   <style>
     body {
       background-color: #000;
@@ -24,6 +24,14 @@
     input {
       margin-bottom: 10px;
     }
+    .custom-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #333;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
 
     #asciiOutput {
       white-space: pre-wrap;
@@ -50,8 +58,9 @@
   </style>
 </head>
 <body>
-  <h1>Фото в ASCII-коде</h1>
-  <input type="file" id="upload" accept="image/*">
+  <h1>Обработайте фотографию в стиле VS Code!</h1>
+  <label for="upload" class="custom-button">Загрузить файл</label>
+  <input type="file" id="upload" style="display: none;">
   <canvas id="preview"></canvas>
   <pre id="asciiOutput"></pre>
 

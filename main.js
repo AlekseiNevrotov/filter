@@ -19,6 +19,9 @@ upload.addEventListener('change', (e) => {
 
     preview.width = width;
     preview.height = height;
+    preview.style.width = width + 'px';
+    preview.style.height = height + 'px';
+
     ctx.drawImage(img, 0, 0, width, height);
     const imageData = ctx.getImageData(0, 0, width, height).data;
 
