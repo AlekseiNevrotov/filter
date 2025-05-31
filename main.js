@@ -79,10 +79,10 @@ upload.addEventListener('change', (e) => {
 // Функция обработки изображения: рисуем в preview, выводим ASCII
 function processImage(img) {
   const ctx = preview.getContext('2d');
-  const maxWidth = 120;
-  const scale = maxWidth / img.width;
+  const screenWidth = window.innerWidth * 0.9; // 90% от ширины экрана
+  const scale = screenWidth / img.width;
   const width = Math.floor(img.width * scale);
-  const height = Math.floor(img.height * scale * 1.0); // коррекция пропорций
+  const height = Math.floor(img.height * scale);
 
   preview.width = width;
   preview.height = height;
