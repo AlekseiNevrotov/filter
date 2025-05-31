@@ -11,18 +11,27 @@ upload.addEventListener('change', (e) => {
 
   const img = new Image();
   img.onload = () => {
-    const ctx = preview.getContext('2d');
     const maxWidth = 120;
     const scale = maxWidth / img.width;
     const width = Math.floor(img.width * scale);
     const height = Math.floor(img.height * scale * 1.0); // aspect correction
 
-    preview.width = width;
-    preview.height = height;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Устанавливаем размеры канваса с учетом плотности пикселей
+    preview.width = width * dpr;
+    preview.height = height * dpr;
+
+    // И задаём CSS размеры (чтобы элемент не растягивался)
     preview.style.width = width + 'px';
     preview.style.height = height + 'px';
 
+    const ctx = preview.getContext('2d');
+    // Масштабируем контекст под DPR, чтобы изображение не искажалось
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, preview.width, preview.height);
     ctx.drawImage(img, 0, 0, width, height);
+
     const imageData = ctx.getImageData(0, 0, width, height).data;
 
     let ascii = '';
@@ -42,7 +51,7 @@ upload.addEventListener('change', (e) => {
 
     output.innerHTML = ascii;
 
-    // SVG экспорт точно как output.innerHTML
+    // Удаляем кнопку "Скачать SVG" если она есть
     let button = document.getElementById('downloadSvg');
     if (button) button.remove();
 
@@ -63,11 +72,6 @@ upload.addEventListener('change', (e) => {
       const lineHeight = computed.lineHeight;
       const fontFamily = computed.fontFamily;
       const letterSpacing = computed.letterSpacing;
-
-      const htmlContent = output.innerHTML
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;');
 
       const width = output.clientWidth;
       const height = output.clientHeight;
