@@ -2,48 +2,76 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASCII Art Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Filter</title>
   <style>
     body {
-      background: #000;
+      background-color: #000;
       color: #0f0;
       font-family: monospace;
-      text-align: center;
+      margin: 0;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
+    h1 {
+      color: #0f0;
+      margin-bottom: 10px;
+    }
     canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 10px auto;
+}
+
+
+    input {
+      margin-bottom: 10px;
+    }
+    .custom-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background: #333;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+    #asciiOutput {
+      white-space: pre-wrap;
+      line-height: 0.65;
+      font-size: 8.5px;
+      letter-spacing: 0.8px;
+      user-select: text;
+      background-color: #000;
+    }
+
+    #preview {
       display: none;
     }
 
-    #asciiOutput {
-      white-space: pre;
-      overflow-x: auto;
-      max-width: 100%;
-      margin-top: 20px;
-      font-size: 6px;
-      line-height: 1.2;
-    }
-
     button {
-      margin-top: 15px;
+      margin-top: 10px;
       padding: 6px 12px;
-      background: #0f0;
-      color: #000;
-      border: none;
       font-family: monospace;
+      background: #0f0;
+      border: none;
+      color: #000;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-
-  <h2>ASCII Art Generator</h2>
-  <input type="file" id="upload" accept="image/*" />
+  <h1>Обработайте фотографию в стиле VS Code!</h1>
+  <label for="upload" class="custom-button">Загрузить файл</label>
+  <input type="file" id="upload" style="display: none;">
   <canvas id="preview"></canvas>
   <pre id="asciiOutput"></pre>
 
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script>
     const upload = document.getElementById('upload');
     const preview = document.getElementById('preview');
@@ -51,78 +79,79 @@
 
     const chars = '@#W$9876543210?!abc;:+=-,._ '.split('').reverse();
 
-    upload.addEventListener('change', async (e) => {
+    // Палитра VS Code (Dark+)
+    const colorPalette = [
+      '#6A9955', // зелёный
+      '#569CD6', // синий
+      '#C586C0', // фиолетовый
+      '#CE9178', // оранжевый
+      '#DCDCAA', // жёлтый
+      '#D4D4D4', // светлый
+      '#808080'  // серый
+    ];
+
+    upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const img = new Image();
-      img.crossOrigin = 'anonymous';
-
       img.onload = () => {
         const ctx = preview.getContext('2d');
+
         const maxWidth = 120;
+        const aspectRatioCorrection = 1; // Для консольного вида
+
         const scale = maxWidth / img.width;
-        const newWidth = Math.floor(img.width * scale);
-        const newHeight = Math.floor(img.height * scale * 0.6); // aspect ratio fix
+        const width = Math.floor(img.width * scale);
+        const height = Math.floor(img.height * scale * aspectRatioCorrection);
 
-        preview.width = newWidth;
-        preview.height = newHeight;
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        preview.width = width;
+        preview.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
 
-        const imageData = ctx.getImageData(0, 0, newWidth, newHeight).data;
+        const imageData = ctx.getImageData(0, 0, width, height).data;
 
-        let asciiLines = [];
-        for (let y = 0; y < newHeight; y++) {
-          let line = '';
-          for (let x = 0; x < newWidth; x++) {
-            const i = (y * newWidth + x) * 4;
-            const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2];
+        let ascii = '';
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const offset = (y * width + x) * 4;
+            const r = imageData[offset];
+            const g = imageData[offset + 1];
+            const b = imageData[offset + 2];
             const brightness = (r + g + b) / 3;
             const charIndex = Math.floor(brightness / 255 * (chars.length - 1));
-            line += chars[charIndex];
+            const colorIndex = Math.floor(brightness / 255 * (colorPalette.length - 1));
+            const char = chars[charIndex];
+            const color = colorPalette[colorIndex];
+            ascii += `<span style="color:${color}">${char}</span>`;
           }
-          asciiLines.push(line);
+          ascii += '\n';
         }
 
-        output.textContent = asciiLines.join('\n');
+        output.innerHTML = ascii;
 
-        // кнопка
-        let oldBtn = document.getElementById('downloadSvg');
-        if (oldBtn) oldBtn.remove();
+        // Кнопка PNG
+        let pngButton = document.getElementById('downloadPng');
+        if (pngButton) pngButton.remove();
 
-        const saveBtn = document.createElement('button');
-        saveBtn.id = 'downloadSvg';
-        saveBtn.textContent = 'Скачать SVG';
-        saveBtn.addEventListener('click', () => {
-          const fontSize = 6;
-          const lineHeight = fontSize * 1.2;
-          const svgWidth = Math.ceil(asciiLines[0].length * fontSize * 0.6);
-          const svgHeight = Math.ceil(asciiLines.length * lineHeight);
+        const savePngButton = document.createElement('button');
+        savePngButton.textContent = 'Скачать PNG';
+        savePngButton.id = 'downloadPng';
 
-          const tspans = asciiLines.map((line, i) => {
-            const y = lineHeight * (i + 1);
-            return `<tspan x="0" y="${y}">${line}</tspan>`;
-          }).join('\n');
-
-          const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}">
-  <rect width="100%" height="100%" fill="black"/>
-  <text x="0" y="0" fill="#00FF00" font-family="monospace" font-size="${fontSize}" xml:space="preserve">
-    ${tspans}
-  </text>
-</svg>
-`;
-
-          const blob = new Blob([svg], { type: 'image/svg+xml' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'ascii-art.svg';
-          a.click();
-          URL.revokeObjectURL(url);
+        savePngButton.addEventListener('click', () => {
+          html2canvas(output, {
+            backgroundColor: '#000',
+            scale: 10,
+            useCORS: true
+          }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'ascii-art.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          });
         });
 
-        output.after(saveBtn);
+        output.after(savePngButton);
       };
 
       const reader = new FileReader();
@@ -132,6 +161,5 @@
       reader.readAsDataURL(file);
     });
   </script>
-
 </body>
 </html>

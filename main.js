@@ -1,159 +1,171 @@
-const fileInput = document.getElementById('fileInput');
+const upload = document.getElementById('upload');
 const preview = document.getElementById('preview');
-const output = document.getElementById('output');
-const chars = " .:-=+*#%@";
-const colorPalette = ["#000", "#111", "#333", "#555", "#777", "#999", "#ccc", "#fff"];
+const output = document.getElementById('asciiOutput');
 
-fileInput.addEventListener('change', async function (e) {
+const chars = '@#W$9876543210?!abc;:+=-,._ '.split('').reverse();
+const colorPalette = ['#6A9955', '#569CD6', '#C586C0', '#CE9178', '#DCDCAA', '#D4D4D4', '#808080'];
+
+// Проверка поддерживаемого формата
+function isUnsupportedFormat(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  return ext === 'heic' || ext === 'heif';
+}
+
+// Конвертация файла HEIC/HEIF в JPEG через canvas
+function convertImageToJpeg(img, callback) {
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    callback(url);
+    // Очистим url позже
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }, 'image/jpeg', 1);
+}
+
+upload.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
-  let img = new Image();
-  img.crossOrigin = "anonymous";
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
 
-  const url = URL.createObjectURL(file);
-  img.onload = () => {
-    URL.revokeObjectURL(url);
-    processImage(img);
+    // Обработчик ошибки загрузки (например, при HEIC, если браузер не поддерживает)
+    img.onerror = () => {
+      // Если формат неподдерживаемый — пробуем конвертировать через canvas (попытка)
+      if (isUnsupportedFormat(file.name)) {
+        // Создаём временный объект URL из файла и загружаем его в img
+        const tempUrl = URL.createObjectURL(file);
+        const tempImg = new Image();
+
+        tempImg.onload = () => {
+          convertImageToJpeg(tempImg, (jpegUrl) => {
+            // После конвертации загружаем JPEG в canvas для обработки
+            const finalImg = new Image();
+            finalImg.onload = () => {
+              processImage(finalImg);
+              URL.revokeObjectURL(tempUrl);
+            };
+            finalImg.src = jpegUrl;
+          });
+        };
+
+        tempImg.onerror = () => {
+          alert('Не удалось обработать изображение');
+          URL.revokeObjectURL(tempUrl);
+        };
+
+        tempImg.src = tempUrl;
+      } else {
+        alert('Не удалось загрузить изображение.');
+      }
+    };
+
+    // Если загрузка прошла успешно — обрабатываем
+    img.onload = () => {
+      processImage(img);
+    };
+
+    img.src = event.target.result;
   };
 
-  img.onerror = async () => {
-    try {
-      const convertedUrl = await convertToSupportedFormat(file);
-      img.src = convertedUrl;
-    } catch (err) {
-      alert('Ошибка при конвертации изображения');
-      console.error(err);
-    }
-  };
-
-  img.src = url;
+  reader.readAsDataURL(file);
 });
 
-async function convertToSupportedFormat(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function () {
-      const image = new Image();
-      image.onload = function () {
-        const canvas = document.createElement("canvas");
-        canvas.width = image.width;
-        canvas.height = image.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(image, 0, 0);
-        canvas.toBlob(function (blob) {
-          if (blob) {
-            resolve(URL.createObjectURL(blob));
-          } else {
-            reject(new Error("Не удалось создать Blob"));
-          }
-        }, "image/jpeg", 0.95); // не минимальное качество
-      };
-      image.onerror = reject;
-      image.src = reader.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+// Функция обработки изображения: рисуем в preview, выводим ASCII
+function processImage(img) {
+  const ctx = preview.getContext('2d');
+  const screenWidth = window.innerWidth * 0.9; // 90% от ширины экрана
+  const scale = screenWidth / img.width;
+  const width = Math.floor(img.width * scale);
+  const height = Math.floor(img.height * scale);
 
-function processImage(originalImg) {
-  const maxDisplaySize = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+  preview.width = width;
+  preview.height = height;
+  preview.style.width = width + 'px';
+  preview.style.height = height + 'px';
 
-  // Очистим EXIF ориентацию
-  const tempCanvas = document.createElement("canvas");
-  tempCanvas.width = originalImg.width;
-  tempCanvas.height = originalImg.height;
-  const tempCtx = tempCanvas.getContext("2d");
-  tempCtx.drawImage(originalImg, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(img, 0, 0, width, height);
 
-  const cleanImg = new Image();
-  cleanImg.onload = () => {
-    const aspectRatio = cleanImg.width / cleanImg.height;
-    let newWidth, newHeight;
+  const imageData = ctx.getImageData(0, 0, width, height).data;
 
-    if (aspectRatio > 1) {
-      newWidth = maxDisplaySize;
-      newHeight = maxDisplaySize / aspectRatio;
-    } else {
-      newHeight = maxDisplaySize;
-      newWidth = maxDisplaySize * aspectRatio;
+  let ascii = '';
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2];
+      const brightness = (r + g + b) / 3;
+      const charIndex = Math.floor(brightness / 255 * (chars.length - 1));
+      const colorIndex = Math.floor(brightness / 255 * (colorPalette.length - 1));
+      const char = chars[charIndex];
+      const color = colorPalette[colorIndex];
+      ascii += `<span style="color:${color}">${char}</span>`;
     }
+    ascii += '\n';
+  }
 
-    preview.width = newWidth;
-    preview.height = newHeight;
-    preview.style.width = newWidth + 'px';
-    preview.style.height = newHeight + 'px';
+  output.innerHTML = ascii;
 
-    const ctx = preview.getContext("2d");
-    ctx.clearRect(0, 0, newWidth, newHeight);
-    ctx.drawImage(cleanImg, 0, 0, newWidth, newHeight);
+  // Кнопка скачивания SVG
+  let button = document.getElementById('downloadSvg');
+  if (button) button.remove();
 
-    const imageData = ctx.getImageData(0, 0, newWidth, newHeight).data;
-    let ascii = '';
-    for (let y = 0; y < newHeight; y++) {
-      for (let x = 0; x < newWidth; x++) {
-        const i = (y * newWidth + x) * 4;
-        const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2];
-        const brightness = (r + g + b) / 3;
-        const charIndex = Math.floor(brightness / 255 * (chars.length - 1));
-        const colorIndex = Math.floor(brightness / 255 * (colorPalette.length - 1));
-        const char = chars[charIndex];
-        const color = colorPalette[colorIndex];
-        ascii += `<span style="color:${color}">${char}</span>`;
-      }
-      ascii += '\n';
-    }
+  const saveButton = document.createElement('button');
+  saveButton.textContent = 'Скачать SVG';
+  saveButton.id = 'downloadSvg';
+  saveButton.style.marginTop = '10px';
+  saveButton.style.padding = '6px 12px';
+  saveButton.style.fontFamily = 'monospace';
+  saveButton.style.background = '#0f0';
+  saveButton.style.border = 'none';
+  saveButton.style.color = '#000';
+  saveButton.style.cursor = 'pointer';
 
-    output.innerHTML = ascii;
+  saveButton.addEventListener('click', () => {
+    const computed = getComputedStyle(output);
+    const fontSize = computed.fontSize;
+    const lineHeight = computed.lineHeight;
+    const fontFamily = computed.fontFamily;
+    const letterSpacing = computed.letterSpacing;
 
-    // Кнопка для скачивания SVG
-    let existingBtn = document.getElementById('downloadSvg');
-    if (existingBtn) existingBtn.remove();
+    const width = output.clientWidth;
+    const height = output.clientHeight;
 
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Скачать SVG';
-    saveBtn.id = 'downloadSvg';
-    saveBtn.style.marginTop = '10px';
-    saveBtn.style.padding = '6px 12px';
-    saveBtn.style.fontFamily = 'monospace';
-    saveBtn.style.background = '#0f0';
-    saveBtn.style.border = 'none';
-    saveBtn.style.color = '#000';
-    saveBtn.style.cursor = 'pointer';
-
-    saveBtn.addEventListener('click', () => {
-      const computed = getComputedStyle(output);
-      const fontSize = computed.fontSize;
-      const lineHeight = computed.lineHeight;
-      const fontFamily = computed.fontFamily;
-      const letterSpacing = computed.letterSpacing;
-      const width = output.clientWidth;
-      const height = output.clientHeight;
-
-      const svg = `
+    const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <foreignObject width="100%" height="100%">
     <div xmlns="http://www.w3.org/1999/xhtml"
-         style="background:black; font-family:${fontFamily}; font-size:${fontSize};
-         line-height:${lineHeight}; letter-spacing:${letterSpacing};
-         color:#0f0; white-space:pre-wrap;">
+         style="
+           background: black;
+           font-family: ${fontFamily};
+           font-size: ${fontSize};
+           line-height: ${lineHeight};
+           letter-spacing: ${letterSpacing};
+           color: #0f0;
+           white-space: pre-wrap;
+           display: block;
+           width: ${width}px;
+           height: ${height}px;
+        ">
       ${output.innerHTML}
     </div>
   </foreignObject>
-</svg>`;
+</svg>
+    `;
 
-      const blob = new Blob([svg], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ascii-art.svg';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ascii-export.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
 
-    output.after(saveBtn);
-  };
-
-  cleanImg.src = tempCanvas.toDataURL();
+  output.after(saveButton);
 }
