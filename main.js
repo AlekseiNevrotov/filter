@@ -5,33 +5,40 @@ const output = document.getElementById('asciiOutput');
 const chars = '@#W$9876543210?!abc;:+=-,._ '.split('').reverse();
 const colorPalette = ['#6A9955', '#569CD6', '#C586C0', '#CE9178', '#DCDCAA', '#D4D4D4', '#808080'];
 
-upload.addEventListener('change', (e) => {
-  const file = e.target.files[0];
+upload.addEventListener('change', async (e) => {
+  let file = e.target.files[0];
   if (!file) return;
+
+  // Проверяем тип файла — если heic/heif, конвертируем
+  if (file.type === 'image/heic' || file.type === 'image/heif') {
+    try {
+      const convertedBlob = await heic2any({
+        blob: file,
+        toType: "image/png",
+        quality: 1
+      });
+      // Заменяем файл на конвертированный Blob
+      file = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, '.png'), { type: "image/png" });
+    } catch (err) {
+      alert('Ошибка при конвертации HEIC/HEIF: ' + err.message);
+      return;
+    }
+  }
 
   const img = new Image();
   img.onload = () => {
+    const ctx = preview.getContext('2d');
     const maxWidth = 120;
     const scale = maxWidth / img.width;
     const width = Math.floor(img.width * scale);
     const height = Math.floor(img.height * scale * 1.0); // aspect correction
 
-    const dpr = window.devicePixelRatio || 1;
-
-    // Устанавливаем размеры канваса с учетом плотности пикселей
-    preview.width = width * dpr;
-    preview.height = height * dpr;
-
-    // И задаём CSS размеры (чтобы элемент не растягивался)
+    preview.width = width;
+    preview.height = height;
     preview.style.width = width + 'px';
     preview.style.height = height + 'px';
 
-    const ctx = preview.getContext('2d');
-    // Масштабируем контекст под DPR, чтобы изображение не искажалось
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, preview.width, preview.height);
     ctx.drawImage(img, 0, 0, width, height);
-
     const imageData = ctx.getImageData(0, 0, width, height).data;
 
     let ascii = '';
@@ -51,7 +58,6 @@ upload.addEventListener('change', (e) => {
 
     output.innerHTML = ascii;
 
-    // Удаляем кнопку "Скачать SVG" если она есть
     let button = document.getElementById('downloadSvg');
     if (button) button.remove();
 
