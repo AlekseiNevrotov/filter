@@ -6,8 +6,8 @@
   <title>Filter</title>
   <style>
     body {
-      background-color: #000;
-      color: #0f0;
+      background-color: #121212;
+      color: #6A9955;
       font-family: monospace;
       margin: 0;
       padding: 20px;
@@ -17,27 +17,45 @@
     }
 
     h1 {
-      color: #0f0;
-      margin-bottom: 10px;
+      color: #6A9955;
+      margin-top: 40px;
+      font-size: 30px;
+      margin-bottom: 30px;
+      text-align: center;
     }
     canvas {
   max-width: 100%;
   height: auto;
   display: block;
-  margin: 10px auto;
+  margin: 20px auto;
 }
 
 
     input {
-      margin-bottom: 10px;
+      margin-bottom: 30px;
     }
     .custom-button {
   display: inline-block;
-  padding: 10px 20px;
+  font-family: monospace;
+  font-size: 20px;
+  padding: 20px 40px;
   background: #333;
   color: #fff;
-  border-radius: 8px;
+  margin: 10px auto;
+  border-radius: 20px;
   cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+}
+.custom-button:hover {
+  background: #6A9955; /* чуть темнее зеленого */
+  transform: scale(1.05);
+}
+
+/* При нажатии */
+.custom-button:active {
+  background: #6A9955; /* еще темнее */
+  transform: scale(0.95);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 
     #asciiOutput {
@@ -52,16 +70,31 @@
     #preview {
       display: none;
     }
+    
 
     button {
-      margin-top: 10px;
-      padding: 6px 12px;
-      font-family: monospace;
-      background: #0f0;
-      border: none;
-      color: #000;
-      cursor: pointer;
-    }
+  display: inline-block;
+  font-family: monospace;
+  font-size: 20px;
+  padding: 20px 40px;
+  background: #333;
+  color: #fff;
+  margin: 10px auto;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+}
+button:hover {
+  background: #6A9955; /* чуть темнее зеленого */
+  transform: scale(1.05);
+}
+
+/* При нажатии */
+button:active {
+  background: #6A9955; /* еще темнее */
+  transform: scale(0.95);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
   </style>
 </head>
 <body>
