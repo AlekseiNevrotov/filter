@@ -1,16 +1,13 @@
 const upload = document.getElementById('upload');
 const preview = document.getElementById('preview');
 const output = document.getElementById('asciiOutput');
-
 const chars = '@#W$9876543210?!abc;:+=-,._ '.split('').reverse();
 const colorPalette = ['#6A9955', '#569CD6', '#C586C0', '#CE9178', '#DCDCAA', '#D4D4D4', '#808080'];
-
 // Проверка поддерживаемого формата
 function isUnsupportedFormat(filename) {
   const ext = filename.split('.').pop().toLowerCase();
   return ext === 'heic' || ext === 'heif';
 }
-
 // Конвертация файла HEIC/HEIF в JPEG через canvas
 function convertImageToJpeg(img, callback) {
   const canvas = document.createElement('canvas');
@@ -25,15 +22,12 @@ function convertImageToJpeg(img, callback) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }, 'image/jpeg', 1);
 }
-
 upload.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = (event) => {
     const img = new Image();
-
     // Обработчик ошибки загрузки (например, при HEIC, если браузер не поддерживает)
     img.onerror = () => {
       // Если формат неподдерживаемый — пробуем конвертировать через canvas (попытка)
@@ -41,7 +35,6 @@ upload.addEventListener('change', (e) => {
         // Создаём временный объект URL из файла и загружаем его в img
         const tempUrl = URL.createObjectURL(file);
         const tempImg = new Image();
-
         tempImg.onload = () => {
           convertImageToJpeg(tempImg, (jpegUrl) => {
             // После конвертации загружаем JPEG в canvas для обработки
@@ -53,29 +46,23 @@ upload.addEventListener('change', (e) => {
             finalImg.src = jpegUrl;
           });
         };
-
         tempImg.onerror = () => {
           alert('Не удалось обработать изображение');
           URL.revokeObjectURL(tempUrl);
         };
-
         tempImg.src = tempUrl;
       } else {
         alert('Не удалось загрузить изображение.');
       }
     };
-
     // Если загрузка прошла успешно — обрабатываем
     img.onload = () => {
       processImage(img);
     };
-
     img.src = event.target.result;
   };
-
   reader.readAsDataURL(file);
 });
-
 // Функция обработки изображения: рисуем в preview, выводим ASCII
 function processImage(img) {
   const ctx = preview.getContext('2d');
@@ -83,17 +70,13 @@ function processImage(img) {
   const scale = screenWidth / img.width;
   const width = Math.floor(img.width * scale);
   const height = Math.floor(img.height * scale);
-
   preview.width = width;
   preview.height = height;
   preview.style.width = width + 'px';
   preview.style.height = height + 'px';
-
   ctx.clearRect(0, 0, width, height);
   ctx.drawImage(img, 0, 0, width, height);
-
   const imageData = ctx.getImageData(0, 0, width, height).data;
-
   let ascii = '';
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -108,13 +91,10 @@ function processImage(img) {
     }
     ascii += '\n';
   }
-
   output.innerHTML = ascii;
-
   // Кнопка скачивания SVG
   let button = document.getElementById('downloadSvg');
   if (button) button.remove();
-
   const saveButton = document.createElement('button');
   saveButton.textContent = 'Скачать SVG';
   saveButton.id = 'downloadSvg';
@@ -125,17 +105,14 @@ function processImage(img) {
   saveButton.style.border = 'none';
   saveButton.style.color = '#000';
   saveButton.style.cursor = 'pointer';
-
   saveButton.addEventListener('click', () => {
     const computed = getComputedStyle(output);
     const fontSize = computed.fontSize;
     const lineHeight = computed.lineHeight;
     const fontFamily = computed.fontFamily;
     const letterSpacing = computed.letterSpacing;
-
     const width = output.clientWidth;
     const height = output.clientHeight;
-
     const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
   <foreignObject width="100%" height="100%">
@@ -157,7 +134,6 @@ function processImage(img) {
   </foreignObject>
 </svg>
     `;
-
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -166,6 +142,5 @@ function processImage(img) {
     a.click();
     URL.revokeObjectURL(url);
   });
-
   output.after(saveButton);
 }
