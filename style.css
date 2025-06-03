@@ -1,0 +1,120 @@
+    body {
+      background-color: #121212;
+      color: #6A9955;
+      font-family: monospace;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #D4D4D4;
+      margin-top: 40px;
+      font-size: 30px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 20px auto;
+    }
+    input {
+      margin-bottom: 30px;
+    }
+    .custom-button {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 20px;
+      padding: 20px 40px;
+      background: #6A9955;
+      color: #121212;
+      margin: 10px auto;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.1s;
+    }
+    .custom-button:hover {
+      background: #6A9955; /* чуть темнее зеленого */
+      transform: scale(1.05);
+    }
+    /* При нажатии */
+    .custom-button:active {
+      background: #6A9955; /* еще темнее */
+      transform: scale(0.95);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #asciiOutput {
+      white-space: pre-wrap;
+      line-height: 0.65;
+      font-size: 8.5px;
+      letter-spacing: 0.8px;
+      user-select: text;
+      background-color: #121212;
+    }
+    #preview {
+      display: none;
+    }
+    button {
+      display: inline-block;
+      font-family: monospace;
+      position: relative;
+      font-size: 20px;
+      padding: 20px 40px;
+      background: #121212;
+      color: #6A9955;
+      margin: 10px auto;
+      border: 1px solid #6A9955; /* например, светлая обводка */
+      border-radius: 50px;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.1s;
+      user-select: none;
+    }
+    button:hover {
+      background: #6A9955; /* чуть темнее зеленого */
+      color: #121212;
+      transform: scale(1.05);
+    }
+    /* При нажатии */
+    button:active {
+      background: #6A9955; /* еще темнее */
+      transform: scale(0.95);
+      box-shadow: inset 0 2px 4px #00000033;
+    }
+    /* Состояние загрузки */
+    button.loading {
+      color: transparent !important;
+      pointer-events: none;
+    }
+    button.loading:hover {
+      background: #121212 !important;
+      color: transparent !important;
+      transform: none !important;
+      cursor: default;
+      box-shadow: none;
+    }
+    /* Контейнер кнопки и прогресс-бара */
+    #downloadPngWrapper {
+      position: relative;
+      display: inline-block;
+      width: fit-content;
+      margin: 10px auto;
+    }
+    /* Прогресс-бар */
+    #downloadPngProgress {
+      position: absolute;
+      bottom: -6px;
+      left: 0;
+      height: 4px;
+      width: 0;
+      background: #6A9955;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
